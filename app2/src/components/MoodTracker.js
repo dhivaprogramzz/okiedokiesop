@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+/*import React, { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 const moodMap = { Happy: 5, Excited: 4, Neutral: 3, Sad: 2, Angry: 1 };
@@ -11,10 +11,27 @@ function MoodTracker({ username }) {
       try {
         const res = await fetch(`http://127.0.0.1:5000/mood_history/${username}`);
         const json = await res.json();
-        const chartData = json.history.map(item => ({
-          date: item.datetime.split(" ")[0],
-          mood: moodMap[item.mood] || 3,
-        }));
+        const today = new Date();
+        const lastMonth = new Date();
+        lastMonth.setDate(today.getDate() - 30); // last 30 days
+
+      const moodMap = { "happy": 5, "excited": 4, "neutral": 3, "sad": 2, "angry": 1 }; // lowercase keys
+
+      const chartData = json.history
+      .filter(item => {
+      const moodDate = new Date(item.datetime.split(" ")[0]);
+      return moodDate >= lastMonth && moodDate <= today; // only last 30 days
+    })
+  .map(item => {
+    const mood = item.mood?.toLowerCase().trim(); // normalize
+    return {
+      date: item.datetime.split(" ")[0],
+      mood: moodMap[mood] || 3, // use mapped value
+    };
+  });
+
+console.log("Chart Data (last month):", chartData); // optional debug
+
         setData(chartData);
       } catch (err) {
         console.error(err);
@@ -40,86 +57,79 @@ function MoodTracker({ username }) {
 }
 
 export default MoodTracker;
+*/
 
+import React, { useEffect, useState } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
-/*import React, { useEffect, useState } from "react";
-import { Line } from "react-chartjs-2";
-import Chart from "chart.js/auto";
+// Map moods to numbers
+const moodMap = { "happy": 5, "excited": 4, "neutral": 3, "sad": 2, "angry": 1 };
+
+// Month names
+const monthNames = ["January","February","March","April","May","June",
+                    "July","August","September","October","November","December"];
 
 function MoodTracker({ username }) {
-  const [mood, setMood] = useState("");
-  const [history, setHistory] = useState([]);
-
-  // Submit mood
-  const submitMood = async () => {
-    if (!mood) return alert("Please select a mood!");
-
-    await fetch("http://127.0.0.1:5000/submit_mood", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, mood }),
-    });
-    setMood("");
-    fetchHistory(); // refresh history
-  };
-
-  // Fetch mood history
-  const fetchHistory = async () => {
-    const res = await fetch(`http://127.0.0.1:5000/mood_history/${username}`);
-    const data = await res.json();
-    setHistory(data.history);
-  };
+  const [data, setData] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    async function fetchMoodHistory() {
+      try {
+        const res = await fetch(`http://127.0.0.1:5000/mood_history/${username}`);
+        const json = await res.json();
 
-  // Prepare data for chart
-  const chartData = {
-    labels: history.map(h => h.datetime),
-    datasets: [
-      {
-        label: "Mood over time",
-        data: history.map(h => {
-          // Convert moods to numeric values for chart
-          switch (h.mood.toLowerCase()) {
-            case "happy": return 5;
-            case "excited": return 4;
-            case "neutral": return 3;
-            case "sad": return 2;
-            case "angry": return 1;
-            default: return 3;
-          }
-        }),
-        fill: false,
-        borderColor: "blue",
-        tension: 0.1
+        const chartData = json.history
+          .filter(item => {
+            const moodDate = new Date(item.datetime);
+            return moodDate.getMonth() === selectedMonth;
+          })
+          .map(item => {
+            const mood = item.mood?.toLowerCase().trim();
+            return {
+              date: item.datetime.split(" ")[0],
+              mood: moodMap[mood] ?? 3,
+            };
+          });
+
+        setData(chartData);
+      } catch (err) {
+        console.error(err);
       }
-    ]
-  };
+    }
+
+    fetchMoodHistory();
+  }, [username, selectedMonth]);
 
   return (
-    <div style={{ margin: "20px" }}>
-      <h3>How are you feeling today?</h3>
-      <select value={mood} onChange={e => setMood(e.target.value)}>
-        <option value="">Select mood</option>
-        <option value="Happy">Happy</option>
-        <option value="Excited">Excited</option>
-        <option value="Neutral">Neutral</option>
-        <option value="Sad">Sad</option>
-        <option value="Angry">Angry</option>
-      </select>
-      <button onClick={submitMood} style={{ marginLeft: "10px" }}>Submit</button>
+    <div>
+      <h3>Mood Tracker</h3>
 
-      {history.length > 0 && (
-        <div style={{ marginTop: "30px" }}>
-          <h3>Your Mood Tracker</h3>
-          <Line data={chartData} />
-        </div>
-      )}
+      {/* Month selector */}
+      <div style={{ marginBottom: "20px" }}>
+        <label>Select Month: </label>
+        <select 
+          value={selectedMonth} 
+          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+        >
+          {monthNames.map((name, idx) => (
+            <option key={idx} value={idx}>{name}</option>
+          ))}
+        </select>
+      </div>
+
+      <LineChart width={500} height={300} data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis domain={[1, 5]} ticks={[1,2,3,4,5]} />
+        <Tooltip />
+        <Legend />
+        <Line type="monotone" dataKey="mood" stroke="#8884d8" />
+      </LineChart>
+
+      {data.length === 0 && <p>No moods recorded for this month.</p>}
     </div>
   );
 }
 
 export default MoodTracker;
-*/
