@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+/*import React, { useState, useEffect } from "react";
 
 const exercises = [
   "Stretch for 2 minutes",
@@ -90,6 +90,68 @@ function Exercises() {
         }}>
           {phase}
         </div>
+      </div>
+    </div>
+  );
+}
+
+export default Exercises;
+*/
+import React, { useState, useEffect } from "react";
+import "./Exercises.css";
+
+const exercises = [
+  "Stretch for 2 minutes",
+  "Write down 1 thing you're grateful for",
+  "Listen to calming music"
+];
+
+function Exercises() {
+  const [phase, setPhase] = useState("Inhale");
+  const [count, setCount] = useState(4);
+  const [timerActive, setTimerActive] = useState(false);
+  const phases = [
+    { name: "Inhale", duration: 5 },
+    { name: "Hold", duration: 3 },
+    { name: "Exhale", duration: 5 },
+  ];
+  const [phaseIndex, setPhaseIndex] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (timerActive) {
+      interval = setInterval(() => {
+        setCount(prev => {
+          if (prev === 1) {
+            const nextIndex = (phaseIndex + 1) % phases.length;
+            setPhase(phases[nextIndex].name);
+            setPhaseIndex(nextIndex);
+            return phases[nextIndex].duration;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timerActive, phaseIndex]);
+
+  const toggleBreathing = () => setTimerActive(prev => !prev);
+
+  return (
+    <div className="exercises-container">
+      <h3>Quick Exercises</h3>
+      <ul className="exercises-list">
+        {exercises.map((ex, i) => <li key={i}>{ex}</li>)}
+      </ul>
+
+      <div className="breathing-container">
+        <div className="breathing-title">Guided Breathing Exercise</div>
+        <div className={`breathing-circle ${phase.toLowerCase()}`}>
+          {phase}: {count}s
+        </div>
+        <button className="breathing-button" onClick={toggleBreathing}>
+          {timerActive ? "Stop" : "Start"}
+        </button>
       </div>
     </div>
   );

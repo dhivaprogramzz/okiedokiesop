@@ -1,0 +1,119 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+body, html, .dashboard {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #6a0dad, #8a2be2); /* deep purple gradient */
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Fade-in animation keyframes */
+@keyframes fadeSlideDown {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  font-weight: 600;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  animation: fadeSlideDown 1s ease-out forwards;
+}
+
+.logo {
+  font-size: 1.8rem;
+}
+
+.links button {
+  background: transparent;
+  border: 2px solid white;
+  border-radius: 50px;
+  padding: 6px 14px;
+  margin-left: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s all ease;
+}
+
+.links button:hover {
+  background: white;
+  color: #6a0dad; /* dark purple */
+  transform: translateY(-3px);
+}
+
+/* Content clouds */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  gap: 30px;
+}
+
+.cloud {
+  width: 90%;
+  max-width: 650px;
+  padding: 30px 40px;
+  border-radius: 60% 40% 50% 50% / 60% 50% 40% 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  opacity: 0;
+  animation: fadeSlideUp 1.2s ease forwards;
+}
+
+.cloud:nth-child(1) { animation-delay: 0.3s; }
+.cloud:nth-child(2) { animation-delay: 0.6s; }
+.cloud:nth-child(3) { animation-delay: 0.9s; }
+.cloud:nth-child(4) { animation-delay: 1.2s; }
+.cloud:nth-child(5) { animation-delay: 1.5s; }
+.cloud:nth-child(6) { animation-delay: 1.8s; }
+
+.cloud:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* Section titles inside cloud */
+.cloud h3 {
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+/* Notes button inside cloud */
+.cloud button {
+  padding: 12px 24px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #6a0dad, #8a2be2);
+  border: none;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.cloud button:hover {
+  background: linear-gradient(135deg, #8a2be2, #6a0dad);
+  transform: translateY(-3px);
+}

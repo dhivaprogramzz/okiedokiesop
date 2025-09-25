@@ -1,5 +1,79 @@
 import React, { useState } from "react";
 
+// Import local images
+import relaxImg from "../assets/images/relax.jpeg";
+import happyImg from "../assets/images/happy.jpeg";
+import sadImg from "../assets/images/sad.jpeg";
+import focusImg from "../assets/images/focus.jpg";
+import workoutImg from "../assets/images/workout.jpg";
+import sleepImg from "../assets/images/sleep.jpeg";
+import stressImg from "../assets/images/stress.jpeg";
+import energyImg from "../assets/images/energy.jpg";
+import romanticImg from "../assets/images/romantic.jpg";
+import musicImg from "../assets/images/music.jpg";
+
+const moods = [
+  { name: "Relax", type: "relax", img: relaxImg, link: "https://open.spotify.com/playlist/37i9dQZF1DXdPec7aLTmlC" },
+  { name: "Happy", type: "happy", img: happyImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX7qK8ma5wgG1" },
+  { name: "Sad", type: "sad", img: sadImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX0BcQWzuB7ZO" },
+  { name: "Focus", type: "focus", img: focusImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO" },
+  { name: "Workout", type: "workout", img: workoutImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX70RN3TfWWJh" },
+  { name: "Sleep", type: "sleep", img: sleepImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX3Ogo9pFvBkY" },
+  { name: "Stress", type: "stress", img: stressImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX3PIPIT6lEg5" },
+  { name: "Energy", type: "energy", img: energyImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX8FwnYE6PRvL" },
+  { name: "Romantic", type: "romantic", img: romanticImg, link: "https://open.spotify.com/playlist/37i9dQZF1DX50QitC6Oqtn" },
+  { name: "General", type: "general", img: musicImg, link: "https://open.spotify.com" } 
+];
+
+function Spotify() {
+  const [selectedLink, setSelectedLink] = useState("");
+
+  const handleClick = (link) => {
+    setSelectedLink(link);
+    window.open(link, "_blank"); // open playlist in new tab
+  };
+
+  return (
+    <div style={{ margin: "20px 0" }}>
+      <h3>Spotify Playlists by Mood</h3>
+      <div style={{ display: "flex", overflowX: "auto", padding: "10px 0" }}>
+        {moods.map((mood) => (
+          <div
+            key={mood.type}
+            style={{ marginRight: "15px", textAlign: "center", cursor: "pointer" }}
+            onClick={() => handleClick(mood.link)}
+          >
+            <img
+              src={mood.img}
+              alt={mood.name}
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "10px",
+                objectFit: "cover",
+                border: "2px solid #8884d8"
+              }}
+            />
+            <div style={{ marginTop: "5px" }}>{mood.name}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Optional: display selected playlist below */}
+      {selectedLink && (
+        <p style={{ marginTop: "10px", fontStyle: "italic" }}>
+          Opening playlist: {selectedLink}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default Spotify;
+
+
+/*import React, { useState } from "react";
+
 const moods = [
   { name: "Relax", type: "relax", img: "https://i.ibb.co/your-uploaded-image.png" },
   { name: "Happy", type: "happy", img: "https://i.ibb.co/7yqkM8R/happy.png" },
@@ -67,3 +141,4 @@ function Spotify() {
 }
 
 export default Spotify;
+*/

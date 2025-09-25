@@ -4,10 +4,61 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import random
 from transformers import pipeline
+import os
+from datetime import datetime
+import requests
+from flask_socketio import SocketIO, emit, join_room, leave_room
+
 
 # ---- Flask app setup ----
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+NOTES_DIR = "user_notes"
+
+if not os.path.exists(NOTES_DIR):
+    os.makedirs(NOTES_DIR)
+
+
+def get_user_folder(username):
+    """Return (and create if missing) the user folder path."""
+    folder = os.path.join(NOTES_DIR, username)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    return folder
+
+
+# NOTES_DIR = os.path.join(os.getcwd(), "notes")
+# os.makedirs(NOTES_DIR, exist_ok=True)
+
+
+
+@socketio.on("join")
+def handle_join(data):
+    """User or therapist joins a call room"""
+    room = data["room"]
+    join_room(room)
+    emit("message", {"msg": f"{data['username']} joined {room}"}, room=room)
+
+
+@socketio.on("signal")
+def handle_signal(data):
+    """Forward signaling data (offer/answer/ICE) to other peer"""
+    room = data["room"]
+    emit("signal", data, room=room, include_self=False)
+
+
+@socketio.on("leave")
+def handle_leave(data):
+    """Handle leaving a room"""
+    room = data["room"]
+    leave_room(room)
+    emit("message", {"msg": f"{data['username']} left {room}"}, room=room)
+
+
 
 # ---- SQLite config ----
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mood.db'
@@ -59,13 +110,151 @@ def detect_emotion_keywords(message):
 
 def detect_emotion_hf(message):
     try:
-        results = emotion_analyzer(message)[0]  # returns list of dicts with score
+        results = emotion_analyzer(message)[0]  
         best = max(results, key=lambda x: x['score'])
         return best['label'].lower()
     except:
         return None
 
 # ---- Routes ----
+
+
+"""@app.route("/save_note", methods=["POST"])
+def save_note():
+    data = request.json
+    username = data.get("username")
+    filename = data.get("filename")
+    content = data.get("content")
+
+    if not username or not filename or not content:
+        return jsonify({"success": False, "message": "Missing fields"})
+
+    folder = get_user_folder(username)
+    filepath = os.path.join(folder, filename)
+
+    # Add timestamp inside file automatically
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    content_with_time = f"[Created on {timestamp}]\n\n{content}"
+
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content_with_time)
+        return jsonify({"success": True, "message": "Note saved"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+"""
+@app.route("/save_note", methods=["POST"])
+def save_note():
+    data = request.json
+    username = data.get("username")
+    filename = data.get("filename")
+    content = data.get("content")
+
+    if not username or not filename or not content:
+        return jsonify({"success": False, "message": "Missing fields"})
+
+    folder = get_user_folder(username)
+    filepath = os.path.join(folder, filename)
+
+    if os.path.exists(filepath):
+        return jsonify({"success": False, "message": "File already exists. Use update_note to modify."})
+
+    # Add timestamp inside file automatically
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    content_with_time = f"[Created on {timestamp}]\n\n{content}"
+
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content_with_time)
+        return jsonify({"success": True, "message": "Note saved"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/get_notes/<username>", methods=["GET"])
+def get_notes(username):
+    folder = get_user_folder(username)
+    notes = []
+    try:
+        for fname in os.listdir(folder):
+            fpath = os.path.join(folder, fname)
+            if os.path.isfile(fpath):
+                with open(fpath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                notes.append({"filename": fname, "content": content})
+        return jsonify({"success": True, "notes": notes})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/delete_note", methods=["POST"])
+def delete_note():
+    data = request.json
+    username = data.get("username")
+    filename = data.get("filename")
+
+    if not username or not filename:
+        return jsonify({"success": False, "message": "Missing fields"})
+
+    folder = get_user_folder(username)
+    filepath = os.path.join(folder, filename)
+
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return jsonify({"success": True, "message": "Note deleted"})
+        else:
+            return jsonify({"success": False, "message": "File not found"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route("/update_note", methods=["POST"])
+def update_note():
+    data = request.json
+    username = data.get("username")
+    filename = data.get("filename")
+    new_content = data.get("content")
+
+    if not username or not filename or not new_content:
+        return jsonify({"success": False, "message": "Missing fields"})
+
+    folder = get_user_folder(username)
+    filepath = os.path.join(folder, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({"success": False, "message": "File not found"})
+
+    try:
+        # Read old content
+        with open(filepath, "r", encoding="utf-8") as f:
+            old_content = f.read()
+
+        lines = old_content.splitlines()
+        # Keep only the first line if it's [Created on ...]
+        if lines and lines[0].startswith("[Created on "):
+            header = lines[0]
+        else:
+            # fallback if somehow header missing
+            header = f"[Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
+
+        # Combine header with new content only
+        updated_content = f"{header}\n\n{new_content}"
+
+        # Write updated content back
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(updated_content)
+
+        return jsonify({"success": True, "message": "Note updated"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+
+@app.route('/')
+def index():
+    return "Server is live!"
+
+
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -95,7 +284,7 @@ def login():
 def submit_mood():
     data = request.get_json()
     username = data.get("username")
-    mood_text = data.get("mood").strip().lower()  # normalize like your version
+    mood_text = data.get("mood").strip().lower()
 
     if not User.query.filter_by(username=username).first():
         return jsonify({"success": False, "message": "User not found"}), 404
@@ -115,6 +304,7 @@ def get_mood_history(username):
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
+    print("Chat endpoint hit!")
     message = data.get("message")
     username = data.get("username")
 
@@ -175,6 +365,54 @@ def chat():
 
     return jsonify({"reply": reply, "emotion": emotion})
 
+
+# ---- Daily Quote ----
+
+@app.route("/daily_quote")
+def daily_quote():
+    try:
+        # Fetch random quote from ZenQuotes API
+        response = requests.get("https://zenquotes.io/api/quotes/random", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # ZenQuotes returns a list of quotes
+            quote = data[0].get("q", "Stay positive and keep going!")
+            author = data[0].get("a", "Unknown")
+            return jsonify({"quote": quote, "author": author})
+    except Exception as e:
+        print("Quote API error:", e)
+
+    # Fallback quotes if API fails
+    fallback_quotes = [
+        {"text": "Keep pushing forward!", "author": "Unknown"},
+        {"text": "Believe in yourself and all that you are.", "author": "Unknown"},
+        {"text": "Every day is a second chance.", "author": "Unknown"},
+        {"text": "Happiness depends upon ourselves.", "author": "Aristotle"},
+        {"text": "Turn your wounds into wisdom.", "author": "Oprah Winfrey"}
+    ]
+    quote = random.choice(fallback_quotes)
+    return jsonify({"quote": quote["text"], "author": quote["author"]})
+
+# ---- Spotify Mood Links ----
+spotify_links = {
+    "happy": "https://open.spotify.com/playlist/37i9dQZF1DXdPec7aLTmlC",
+    "sad": "https://open.spotify.com/playlist/37i9dQZF1DX7qK8ma5wgG1",
+    "bored": "https://open.spotify.com/playlist/37i9dQZF1DX0BcQWzuB7ZO",
+    "angry": "https://open.spotify.com/playlist/37i9dQZF1DWYxwmBaMqxsl",
+    "anxious": "https://open.spotify.com/playlist/37i9dQZF1DWVrtsSlLKzro",
+    "love": "https://open.spotify.com/playlist/37i9dQZF1DWXbttAJcbphz",
+    "neutral": "https://open.spotify.com/playlist/37i9dQZF1DX4WYpdgoIcn6"
+}
+
+@app.route("/spotify/<mood>", methods=["GET"])
+def spotify(mood):
+    if mood in spotify_links:
+        return jsonify({"link": spotify_links[mood]})
+    return jsonify({"error": "Mood not found"}), 404
+
+
 # ---- Main ----
 if __name__ == "__main__":
     app.run(debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+

@@ -5,6 +5,7 @@ import MoodCheck from "./components/MoodCheck";
 import Signup from "./components/Signup";
 import Dashboard from "./components/Dashboard";
 import ChatBot from "./components/ChatBot";
+import Notes from "./components/Notes";
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />    
         <Route path="/mood" element={<MoodCheck />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/notes" element={<Notes />} /> 
         
 
       </Routes>
